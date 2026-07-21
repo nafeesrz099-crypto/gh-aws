@@ -1,0 +1,39 @@
+name: Create S3 Bucket
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-s3:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Verify AWS
+        run: aws sts get-caller-identity
+
+      - name: Create Bucket
+        run: |
+          BUCKET=my-github-actions-bucket-${{ github.run_number }}
+
+          if [ "${{ secrets.AWS_REGION }}" = "us-east-1" ]; then
+            aws s3api create-bucket \
+              --bucket $BUCKET
+          else
+            aws s3api create-bucket \
+              --bucket $BUCKET \
+              --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}
+          fi
+
+          echo "Bucket Created: $BUCKET"
+
+      - name: List Buckets
+        run: aws s3 ls
